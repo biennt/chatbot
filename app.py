@@ -7,11 +7,8 @@ from openai import OpenAI
 
 def chat(message, history):
     openai = OpenAI()
-    messages = history
+    messages = history[:]
     messages.append({"role":"user", "content":message})
-    print("---------")
-    print(messages)
-    print("---------")
     response = openai.chat.completions.create(model="gpt-4o-mini", messages=messages)
     return response.choices[0].message.content
 
