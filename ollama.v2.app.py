@@ -26,14 +26,20 @@ def handle_tool_call(message):
 
 def chat(message, history):
     messages = [{"role": "system", "content": system_message}] + history + [{"role": "user", "content": message}]
-    response = openai.chat.completions.create(model=MODEL, messages=messages, tools=tools)
+    print("--1--")
+    print(messages)
+    print("-----") 
+    response = ollama_via_openai.chat.completions.create(model=MODEL, messages=messages, tools=tools)
 
     if response.choices[0].finish_reason=="tool_calls":
         message = response.choices[0].message
         response, city = handle_tool_call(message)
         messages.append(message)
         messages.append(response)
-        response = openai.chat.completions.create(model=MODEL, messages=messages)
+        print("--2--")
+        print(messages)
+        print("-----")
+        response = ollama_via_openai.chat.completions.create(model=MODEL, messages=messages)
 
     return response.choices[0].message.content
 
@@ -59,12 +65,12 @@ tools = [{"type": "function", "function": price_function}]
 ####################################
 
 load_dotenv()
-api_key = os.getenv('OPENAI_API_KEY')
-MODEL = "gpt-4o-mini"
-openai = OpenAI()
+MODEL="llama3.2:latest"
+ollama_via_openai = OpenAI(base_url='http://10.8.0.5:11434/v1', api_key='ollama')
 system_message = "You are a helpful assistant for an Airline called FlightAI. "
 system_message += "Give short, courteous answers, no more than 1 sentence. "
 system_message += "Always be accurate. If you don't know the answer, say so."
 
-demo = gr.ChatInterface(fn=chat, type="messages", title="Chat Bot")
+demo = gr.ChatInterface(fn=chat, type="messages", title="Chat Bot v2 - Ollama")
 demo.launch()
+
