@@ -4,11 +4,25 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import gradio as gr
 
-
+########## Tool ###########
 def get_ticket_price(destination_city):
+    ticket_prices = {"london": "$799", "paris": "$899", "tokyo": "$1400", "berlin": "$499"}
     print(f"Tool get_ticket_price called for {destination_city}")
     city = destination_city.lower()
     return ticket_prices.get(city, "Unknown")
+    
+def handle_tool_call(message):
+    tool_call = message.tool_calls[0]
+    arguments = json.loads(tool_call.function.arguments)
+    city = arguments.get('destination_city')
+    price = get_ticket_price(city)
+    response = {
+        "role": "tool",
+        "content": json.dumps({"destination_city": city,"price": price}),
+        "tool_call_id": message.tool_calls[0].id
+    }
+    return response, city
+###########################
 
 def chat(message, history):
     messages = [{"role": "system", "content": system_message}] + history + [{"role": "user", "content": message}]
@@ -23,24 +37,8 @@ def chat(message, history):
 
     return response.choices[0].message.content
 
-def handle_tool_call(message):
-    tool_call = message.tool_calls[0]
-    arguments = json.loads(tool_call.function.arguments)
-    city = arguments.get('destination_city')
-    price = get_ticket_price(city)
-    response = {
-        "role": "tool",
-        "content": json.dumps({"destination_city": city,"price": price}),
-        "tool_call_id": message.tool_calls[0].id
-    }
-    return response, city
-
 ## Main
-ticket_prices = {"london": "$799", "paris": "$899", "tokyo": "$1400", "berlin": "$499"}
-system_message = "You are a helpful assistant for an Airline called FlightAI. "
-system_message += "Give short, courteous answers, no more than 1 sentence. "
-system_message += "Always be accurate. If you don't know the answer, say so."
-
+############### Tool ################
 # There's a particular dictionary structure that's required to describe our function:
 price_function = {
     "name": "get_ticket_price",
@@ -58,11 +56,15 @@ price_function = {
     }
 }
 tools = [{"type": "function", "function": price_function}]
+####################################
 
 load_dotenv()
 api_key = os.getenv('OPENAI_API_KEY')
 MODEL = "gpt-4o-mini"
 openai = OpenAI()
+system_message = "You are a helpful assistant for an Airline called FlightAI. "
+system_message += "Give short, courteous answers, no more than 1 sentence. "
+system_message += "Always be accurate. If you don't know the answer, say so."
 
 demo = gr.ChatInterface(fn=chat, type="messages", title="Chat Bot")
 demo.launch()
