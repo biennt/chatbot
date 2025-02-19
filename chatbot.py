@@ -67,7 +67,7 @@ exchangerate_function = {
 }
 interestrate_function = {
     "name": "get_interest_rate",
-    "description": "Get the deposit interest rate for each term (number of month). Call this whenever you need to know the rate, for example when a client asks 'What is the interest rate for 3 months?'",
+    "description": "Get the deposit interest rate for each term (number of month). Call this whenever you need to know the rate, for example when a client asks 'What is the interest rate of 3 months term?'",
     "parameters": {
         "type": "object",
         "properties": {
