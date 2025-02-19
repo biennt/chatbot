@@ -17,7 +17,7 @@ def interest_rate(term):
     print(f"Tool interest_rate called for {term}")
     return rates.get(term, "negotiable at the bank office")
 
-def handle_tool_call(message):
+def handle_tool_exchangerate_call(message):
     tool_call = message.tool_calls[0]
     arguments = json.loads(tool_call.function.arguments)
     foreign_currency = arguments.get('foreign_currency')
@@ -29,12 +29,17 @@ def handle_tool_call(message):
     }
     return response, foreign_currency
 
-
-###########################
-#def chat(message, history):
-#    messages = [{"role": "system", "content": system_message}] + history + [{"role": "user", "content": message}]
-#    response = openai.chat.completions.create(model=MODEL, messages=messages)
-#    return response.choices[0].message.content
+def handle_tool_interestrate_call(message):
+    tool_call = message.tool_calls[0]
+    arguments = json.loads(tool_call.function.arguments)
+    term = arguments.get('term')
+    rate = interest_rate(term)
+    response = {
+        "role": "tool",
+        "content": json.dumps({"term": term,"rate": rate}),
+        "tool_call_id": message.tool_calls[0].id
+    }
+    return response, term
 
 def chat(message, history):
     messages = [{"role": "system", "content": system_message}] + history + [{"role": "user", "content": message}]
@@ -42,14 +47,18 @@ def chat(message, history):
 
     if response.choices[0].finish_reason=="tool_calls":
         message = response.choices[0].message
-        response, city = handle_tool_call(message)
+        if 'get_exchange_rate' in str(message):
+          response, foreign_currency = handle_tool_exchangerate_call(message)
+        if 'get_interest_rate' in str(message):
+          response, term = handle_tool_interestrate_call(message)
+        
         messages.append(message)
         messages.append(response)
         response = openai.chat.completions.create(model=MODEL, messages=messages)
     return response.choices[0].message.content
 
 ## Main
-############### Tool ################
+############### Tools ################
 exchangerate_function = {
     "name": "get_exchange_rate",
     "description": "Get the exchange rate between Riel and foreign currencies. Call this whenever you need to know the rate, for example when a client asks 'What is the exchange rate with USD?'",
@@ -85,9 +94,7 @@ tools = [{"type": "function", "function": exchangerate_function}, {"type": "func
 load_dotenv()
 api_key = os.getenv('OPENAI_API_KEY')
 MODEL="gpt-4o"
-
 openai = OpenAI()
-
 system_message = "You are a helpful assistant for a bank called Khmer Commercial Bank (KCB)"
 system_message += "Here are some quick information about the bank:"
 system_message += "Address: Daun Penh, Phnom Penh, Cambodia"
