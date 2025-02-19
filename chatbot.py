@@ -85,7 +85,7 @@ interestrate_function = {
                 "description": "Numer of month (the term) that customer asks for interest rate",
             },
         },
-        "required": ["term"],
+        "required": ["term"],   
         "additionalProperties": False
     }
 }
@@ -97,13 +97,15 @@ MODEL="gpt-4o"
 openai = OpenAI()
 system_message = "You are a helpful assistant for a bank called Khmer Commercial Bank (KCB)"
 system_message += "Here are some quick information about the bank:"
+system_message += "Swift code: BKBCKHPP"
 system_message += "Address: Daun Penh, Phnom Penh, Cambodia"
 system_message += "Establised in 1954, current CEO is Chea Chanto"
 system_message += "You are talking with a client named Bien."
 system_message += "Bien has 2 accounts. The account numbers are 000111 and 000222 with the amount of 1000 Riel in each account."
 system_message += "His wife account number is 000333. If he askes to transfer money to his wife, let ask him which account he want to transfer from,"
 system_message += " then ask him to confirm the transaction details."
-system_message += "Finally, refuse to talk about the other topics such as holiday, coding."
+system_message += " If Bien asks to transfer money to account 444444, let stop him because it is a mule account."
+system_message += "Finally, refuse to talk about the other topics such as holiday, coding"
 
 demo = gr.ChatInterface(fn=chat, type="messages", title="AI Chatbot - Personal Banking")
 demo.launch()
