@@ -1,21 +1,55 @@
 import os
 import json
+import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 import gradio as gr
 
-
 ########## Tool ###########
 def exchange_rate(foreign_currency):
-    rates = {"usd": "4016", "cny": "552", "jpy": "26.5"}
     print(f"Tool exchange_rate called for {foreign_currency}")
+    rates = {"usd": "4016", "cny": "552", "jpy": "26.5"}
     foreign_currency = foreign_currency.lower()
     return rates.get(foreign_currency, "Unknown")
 
 def interest_rate(term):
-    rates = {"1": "4%", "3": "4.5%", "6": "5%"}
     print(f"Tool interest_rate called for {term}")
+    rates = {"1": "4%", "3": "4.5%", "6": "5%"}
     return rates.get(term, "negotiable at the bank office")
+
+def check_balance_all_accounts(id):
+    print(f"Tool check_balance_all_accounts called for {id}")
+    total_amount = 0
+    try:
+        url = "http://127.0.0.1:3000/users/" + id
+        response = requests.get(url)
+        api_data = response.json()
+        accounts = api_data["accounts"]
+        number_of_accounts = len(accounts)
+        for account in accounts:
+            try:
+                acct_url = "http://127.0.0.1:3000/accounts/" + account
+                acct_response = requests.get(acct_url)
+                acct_api_data = acct_response.json()
+                amount = acct_api_data["value"]
+                total_amount += int(amount)
+            except requests.exceptions.Timeout:
+                print("timeout when connecting to API server {}".format(acct_url))
+    except requests.exceptions.Timeout:
+        print("timeout when connecting to API server {}".format(url))
+    return total_amount
+###############################
+def handle_tool_check_balance_all_accounts_call(message):
+    tool_call = message.tool_calls[0]
+    arguments = json.loads(tool_call.function.arguments)
+    id = arguments.get('id')
+    balance = check_balance_all_accounts(id)
+    response = {
+        "role": "tool",
+        "content": json.dumps({"id": id, "balance": balance}),
+        "tool_call_id": message.tool_calls[0].id
+    }
+    return response, id
 
 def handle_tool_exchangerate_call(message):
     tool_call = message.tool_calls[0]
@@ -40,17 +74,23 @@ def handle_tool_interestrate_call(message):
         "tool_call_id": message.tool_calls[0].id
     }
     return response, term
-
+#########################################
 def chat(message, history):
     messages = [{"role": "system", "content": system_message}] + history + [{"role": "user", "content": message}]
     response = openai.chat.completions.create(model=MODEL, messages=messages, tools=tools)
 
     if response.choices[0].finish_reason=="tool_calls":
         message = response.choices[0].message
+        #print("---------------")
+        #print(str(message))
+        #print("---------------")
+
         if 'get_exchange_rate' in str(message):
           response, foreign_currency = handle_tool_exchangerate_call(message)
         if 'get_interest_rate' in str(message):
           response, term = handle_tool_interestrate_call(message)
+        if 'check_balance_all' in str(message):
+          response, total_amount = handle_tool_check_balance_all_accounts_call(message)
         
         messages.append(message)
         messages.append(response)
@@ -89,23 +129,39 @@ interestrate_function = {
         "additionalProperties": False
     }
 }
-tools = [{"type": "function", "function": exchangerate_function}, {"type": "function", "function": interestrate_function}]
+check_balance_all_accounts_function = {
+    "name": "check_balance_all",
+    "description": ". Call this whenever you need to know total amount of money that a client has from all of accounts, for example when a client asks 'How much money do I have from all accounts?'",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "id of the client, it is the same as the name of the client",
+            },
+        },
+        "required": ["id"],   
+        "additionalProperties": False
+    }
+}
+tools = [{"type": "function", "function": exchangerate_function}, {"type": "function", "function": interestrate_function}, {"type": "function", "function": check_balance_all_accounts_function}]
 ####################################
 load_dotenv()
 api_key = os.getenv('OPENAI_API_KEY')
 MODEL="gpt-4o"
-openai = OpenAI()
-system_message = "You are a helpful assistant for a bank called Khmer Commercial Bank (KCB)"
+system_message = "You are a helpful assistant for a bank called Khmer Commercial Bank (KCB)."
 system_message += "Here are some quick information about the bank:"
-system_message += "Swift code: BKBCKHPP"
-system_message += "Address: Daun Penh, Phnom Penh, Cambodia"
-system_message += "Establised in 1954, current CEO is Chea Chanto"
-system_message += "You are talking with a client named Bien."
-system_message += "Bien has 2 accounts. The account numbers are 000111 and 000222 with the amount of 1000 Riel in each account."
-system_message += "His wife account number is 000333. If he askes to transfer money to his wife, let ask him which account he want to transfer from,"
+system_message += "Swift code: BKBCKHPP."
+system_message += "Address: Daun Penh, Phnom Penh, Cambodia."
+system_message += "Establised in 1954, current CEO is Chea Chanto."
+system_message += "All of the accounts are in Riel (KHR)."
+system_message += "You are talking with a client named Bien. His id in the system is bien."
+system_message += "Bien has 2 accounts. The account numbers are 000111 and 000222."
+system_message += "His wife is Maya, her id in the bank is maya, her account number is 000333. If he askes to transfer money to his wife, let ask him which account he want to transfer from,"
 system_message += " then ask him to confirm the transaction details."
-system_message += " If Bien asks to transfer money to account 444444, let stop him because it is a mule account."
+system_message += " If Bien asks to transfer money to account 000444, let stop him because it is a mule account."
 system_message += "Finally, refuse to talk about the other topics such as holiday, coding"
 
+openai = OpenAI()
 demo = gr.ChatInterface(fn=chat, type="messages", title="AI Chatbot - Personal Banking")
 demo.launch()
