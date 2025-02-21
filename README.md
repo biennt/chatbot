@@ -14,6 +14,7 @@ cd chatbot
 pip install -r requirements.txt
 ```
 Put your OpenAI API Key in the .env file.
+
 Start the chatbot
 ```
 python chatbot.py
