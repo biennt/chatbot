@@ -33,10 +33,10 @@ def check_balance_all_accounts(id):
                 acct_api_data = acct_response.json()
                 amount = acct_api_data["value"]
                 total_amount += int(amount)
-            except requests.exceptions.Timeout:
-                print("timeout when connecting to API server {}".format(acct_url))
-    except requests.exceptions.Timeout:
-        print("timeout when connecting to API server {}".format(url))
+            except requests.exceptions.ConnectionError as errc:
+                print("ConnectionError when connecting to API server {}".format(acct_url))
+    except requests.exceptions.ConnectionError as errc:
+        print("ConnectionError when connecting to API server {}".format(url))
     return total_amount
 ###############################
 def handle_tool_check_balance_all_accounts_call(message):
@@ -81,10 +81,6 @@ def chat(message, history):
 
     if response.choices[0].finish_reason=="tool_calls":
         message = response.choices[0].message
-        #print("---------------")
-        #print(str(message))
-        #print("---------------")
-
         if "get_exchange_rate" in str(message):
           response, foreign_currency = handle_tool_exchangerate_call(message)
         if "get_interest_rate" in str(message):
