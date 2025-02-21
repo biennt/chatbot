@@ -42,7 +42,7 @@ def check_balance_all_accounts(id):
 def handle_tool_check_balance_all_accounts_call(message):
     tool_call = message.tool_calls[0]
     arguments = json.loads(tool_call.function.arguments)
-    id = arguments.get('id')
+    id = arguments.get("id")
     balance = check_balance_all_accounts(id)
     response = {
         "role": "tool",
@@ -54,7 +54,7 @@ def handle_tool_check_balance_all_accounts_call(message):
 def handle_tool_exchangerate_call(message):
     tool_call = message.tool_calls[0]
     arguments = json.loads(tool_call.function.arguments)
-    foreign_currency = arguments.get('foreign_currency')
+    foreign_currency = arguments.get("foreign_currency")
     rate = exchange_rate(foreign_currency)
     response = {
         "role": "tool",
@@ -66,7 +66,7 @@ def handle_tool_exchangerate_call(message):
 def handle_tool_interestrate_call(message):
     tool_call = message.tool_calls[0]
     arguments = json.loads(tool_call.function.arguments)
-    term = arguments.get('term')
+    term = arguments.get("term")
     rate = interest_rate(term)
     response = {
         "role": "tool",
@@ -85,11 +85,11 @@ def chat(message, history):
         #print(str(message))
         #print("---------------")
 
-        if 'get_exchange_rate' in str(message):
+        if "get_exchange_rate" in str(message):
           response, foreign_currency = handle_tool_exchangerate_call(message)
-        if 'get_interest_rate' in str(message):
+        if "get_interest_rate" in str(message):
           response, term = handle_tool_interestrate_call(message)
-        if 'check_balance_all' in str(message):
+        if "check_balance_all" in str(message):
           response, total_amount = handle_tool_check_balance_all_accounts_call(message)
         
         messages.append(message)
@@ -131,7 +131,7 @@ interestrate_function = {
 }
 check_balance_all_accounts_function = {
     "name": "check_balance_all",
-    "description": ". Call this whenever you need to know total amount of money that a client has from all of accounts, for example when a client asks 'How much money do I have from all accounts?'",
+    "description": ". Call this whenever you need to know total amount of money that a client has from all of accounts, for example when a client asks 'How much do I have from all accounts?'",
     "parameters": {
         "type": "object",
         "properties": {
@@ -147,13 +147,13 @@ check_balance_all_accounts_function = {
 tools = [{"type": "function", "function": exchangerate_function}, {"type": "function", "function": interestrate_function}, {"type": "function", "function": check_balance_all_accounts_function}]
 ####################################
 load_dotenv()
-api_key = os.getenv('OPENAI_API_KEY')
+api_key = os.getenv("OPENAI_API_KEY")
 MODEL="gpt-4o"
 system_message = "You are a helpful assistant for a bank called Khmer Commercial Bank (KCB)."
 system_message += "Here are some quick information about the bank:"
 system_message += "Swift code: BKBCKHPP."
 system_message += "Address: Daun Penh, Phnom Penh, Cambodia."
-system_message += "Establised in 1954, current CEO is Chea Chanto."
+system_message += "Establised in 1954, current CEO is Borai Chanto."
 system_message += "All of the accounts are in Riel (KHR)."
 system_message += "You are talking with a client named Bien. His id in the system is bien."
 system_message += "Bien has 2 accounts. The account numbers are 000111 and 000222."
@@ -163,5 +163,5 @@ system_message += " If Bien asks to transfer money to account 000444, let stop h
 system_message += "Finally, refuse to talk about the other topics such as holiday, coding"
 
 openai = OpenAI()
-demo = gr.ChatInterface(fn=chat, type="messages", title="AI Chatbot - Personal Banking")
+demo = gr.ChatInterface(fn=chat, type="messages", title="AI Chatbot - Personal Banking (using OpenAI with model {})".format(MODEL))
 demo.launch()
