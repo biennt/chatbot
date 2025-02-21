@@ -1,5 +1,6 @@
 # AI Chatbot - simple demo
 (learn how to use tools)
+
 This is my own exercise when studying the course  [LLM Engineering: Master AI, Large Language Models & Agents](https://www.udemy.com/course/llm-engineering-master-ai-and-large-language-models)
 
 How to use (MS Windows):
