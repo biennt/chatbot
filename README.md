@@ -16,9 +16,9 @@ pip install -r requirements.txt
 ```
 Put your OpenAI API Key in the .env file.
 
-Start the chatbot
+4. Start the chatbot
 ```
 python chatbot.py
 ```
-4. Using your browser to access http://127.0.0.1:7860/
+5. Using your browser to access http://127.0.0.1:7860/
 Have fun!
