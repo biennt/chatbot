@@ -11,7 +11,7 @@ def chat(message, history):
 
 ## Main
 load_dotenv()
-api_key = os.getenv("AZURE_API_KEY")
+api_key = os.getenv("API_KEY")
 base_url = os.getenv("BASE_URL")
 MODEL="gpt-5.4-mini"
 
